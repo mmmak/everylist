@@ -1,0 +1,5 @@
+// node express script
+sudo npm install express
+express -c stylus
+npm install -d
+
