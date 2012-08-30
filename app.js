@@ -4,80 +4,53 @@
  */
 
 var express = require('express');
-var ArticleProvider = require('./articleprovider-mongodb').ArticleProvider;
-
+var ListProvider = require('./listprovider.mongodb').ListProvider;
 
 var app = module.exports = express.createServer();
 
 // Configuration
 
 app.configure(function(){
-  app.set('views', __dirname + '/views');
-  app.set('view engine', 'jade');
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(require('stylus').middleware({ src: __dirname + '/public' }));
-  app.use(app.router);
-  app.use(express.static(__dirname + '/public'));
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'jade');
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(require('stylus').middleware({ src: __dirname + '/public' }));
+    app.use(app.router);
+    app.use(express.static(__dirname + '/public'));
 });
 
 app.configure('development', function(){
-  app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
+    app.use(express.errorHandler({ dumpExceptions: true, showStack: true })); 
 });
 
 app.configure('production', function(){
-  app.use(express.errorHandler()); 
+    app.use(express.errorHandler()); 
 });
 
 // Routes
 
-var articleProvider = new ArticleProvider('localhost', 27017);
+var listProvider = new ListProvider('localhost', 27017);
 
+// show owners
 app.get('/', function(req, res){
-    articleProvider.findAll( function(error,docs){
-        res.render('index.jade', { locals: {
-            title: 'Blog',
-            articles:docs
-            }
-        });
-    })
-});
-
-app.get('/blog/new', function(req, res) {
-    res.render('blog_new.jade', { locals: {
-        title: 'New Post'
-    }
+    listProvider.GetOwners( function(error,owners){
+        res.send (owners);
     });
 });
 
-app.post('/blog/new', function(req, res){
-    articleProvider.save({
-        title: req.param('title'),
-        body: req.param('body')
-    }, function( error, docs) {
-        res.redirect('/')
+// show owners list
+app.get('/owner/*/*', function (req, res) {
+    listProvider.GetList (req.params[0], req.params[1], function (error, lists){
+        res.send (lists);
     });
 });
 
-app.get('/blog/:id', function(req, res) {
-    articleProvider.findById(req.params.id, function(error, article) {
-        res.render('blog_show.jade',
-        { locals: {
-            title: article.title,
-            article:article
-        }
-        });
+// show owners lists
+app.get('/owner/*', function (req, res) {
+    listProvider.GetLists (req.params[0], function (error, lists){
+        res.send (lists);
     });
-});
-
-app.post('/blog/addComment', function(req, res) {
-    articleProvider.addCommentToArticle(req.param('_id'), {
-        person: req.param('person'),
-        comment: req.param('comment'),
-        created_at: new Date()
-       } , function( error, docs) {
-           res.redirect('/blog/' + req.param('_id'))
-       });
 });
 
 app.listen(3000);
